@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 package duck.spring.itsol.services.user;
 
 import duck.spring.itsol.dtos.UserDto;
@@ -23,3 +24,30 @@ public interface UserService {
     User updateUser(long maKH, UserUpdateDto userUpdateDto) throws Exception;
     void deleteUser(Long maKh);
 }
+=======
+//package duck.spring.itsol.services.user;
+//
+//import duck.spring.itsol.dtos.UserDto;
+//import duck.spring.itsol.dtos.UserUpdateDto;
+//import duck.spring.itsol.models.User;
+//
+//import java.util.List;
+//import java.util.Optional;
+//
+//public interface UserService {
+//    Optional<User> findUserByMakh(Long maKH);
+//    List<User> findAllUser();
+//    User createUser(UserDto userDto) throws Exception;
+//
+//    String login(
+//            String email,
+//            String password,
+//            Long roleId
+//    ) throws Exception;
+//
+//    User getUserDetailsFromToken(String token) throws Exception;
+//    User getUserDetailsFromRefreshToken(String token) throws Exception;
+//    User updateUser(long maKH, UserUpdateDto userUpdateDto) throws Exception;
+//    void deleteUser(Long maKh);
+//}
+>>>>>>> 5e37fb11d587543ea3407f4acfb082ec00170d9c
