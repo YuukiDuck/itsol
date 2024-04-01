@@ -7,19 +7,18 @@ import duck.spring.itsol.dtos.UserDto;
 import duck.spring.itsol.dtos.UserUpdateDto;
 import duck.spring.itsol.exceptions.DataNotFoundException;
 import duck.spring.itsol.exceptions.ExpiredTokenException;
-import duck.spring.itsol.exceptions.PermissionDenyException;
 import duck.spring.itsol.models.Role;
 import duck.spring.itsol.models.Token;
 import duck.spring.itsol.models.User;
 import duck.spring.itsol.repositories.RoleRepo;
 import duck.spring.itsol.repositories.TokenRepository;
 import duck.spring.itsol.repositories.UserRepo;
-import duck.spring.itsol.utils.MessageKeys;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -38,6 +37,7 @@ public class UserServiceImpl implements UserService {
     private final JwtTokenUtils jwtTokenUtil;
     private final AuthenticationManager authenticationManager;
     private final LocalizationUtils localizationUtils;
+    private Authentication authentication;
 
     @Override
     public Optional<User> findUserByMakh(Long maKH) {
@@ -49,21 +49,38 @@ public class UserServiceImpl implements UserService {
         return userRepo.findAll();
     }
 
+    //    @Override
+//    @Transactional
+//    public User createUser(UserDto userDto) throws Exception {
+//        String Email = userDto.getEmail();
+//
+//        if (userRepo.existsByEmail(Email)) {
+//            throw new DataIntegrityViolationException("email đã tồn tại");
+//        }
+//        Role role = roleRepo.findById(userDto.getRoleId())
+//                .orElseThrow(() -> new DataNotFoundException(
+//                        localizationUtils.getLocalizedMessage(MessageKeys.ROLE_DOES_NOT_EXISTS)));
+//        if (role.getName().toUpperCase().equals(Role.ADMIN)) {
+//            throw new PermissionDenyException("Không được phép đăng ký tài khoản Admin");
+//        }
+//
+//        User newUser = User.builder()
+//                .ten(userDto.getTen())
+//                .diaChi(userDto.getDiaChi())
+//                .dienThoai(userDto.getDienThoai())
+//                .email(userDto.getEmail())
+//                .password(userDto.getPassword())
+//                .build();
+//
+//        newUser.setRole(role);
+//        return userRepo.save(newUser);
+//    }
     @Override
-    @Transactional
-    public User createUser(UserDto userDto) throws Exception {
+    public User createUser(UserDto userDto) throws DataNotFoundException {
         String Email = userDto.getEmail();
-
         if (userRepo.existsByEmail(Email)) {
-            throw new DataIntegrityViolationException("email đã tồn tại");
+            throw new DataIntegrityViolationException("Email number alread exists");
         }
-        Role role = roleRepo.findById(userDto.getRoleId())
-                .orElseThrow(() -> new DataNotFoundException(
-                        localizationUtils.getLocalizedMessage(MessageKeys.ROLE_DOES_NOT_EXISTS)));
-        if (role.getName().toUpperCase().equals(Role.ADMIN)) {
-            throw new PermissionDenyException("Không được phép đăng ký tài khoản Admin");
-        }
-
         User newUser = User.builder()
                 .ten(userDto.getTen())
                 .diaChi(userDto.getDiaChi())
@@ -71,42 +88,60 @@ public class UserServiceImpl implements UserService {
                 .email(userDto.getEmail())
                 .password(userDto.getPassword())
                 .build();
+        Role role = roleRepo.findById(userDto.getRoleId())
+                .orElseThrow(() -> new DataNotFoundException("Role not found"));
 
         newUser.setRole(role);
         return userRepo.save(newUser);
     }
 
+    //    @Override
+//    public String login(String email, String password, Long roleId) throws Exception {
+//        Optional<User> optionalUser = userRepo.findByEmail(email);
+//        if (optionalUser.isEmpty()) {
+//            throw new DataNotFoundException(localizationUtils.getLocalizedMessage(MessageKeys.WRONG_EMAIL_PASSWORD));
+//        }
+////        return optionalUser.get();//muốn trả JWT token ?
+//        User existingUser = optionalUser.get();
+//        if (existingUser.getFacebookAccountId() == 0
+//                && existingUser.getGoogleAccountId() == 0) {
+//            if (!passwordEncoder.matches(password, existingUser.getPassword())) {
+//                throw new BadCredentialsException(localizationUtils.getLocalizedMessage(MessageKeys.WRONG_EMAIL_PASSWORD));
+//            }
+//        }
+//        Optional<Role> optionalRole = roleRepo.findById(roleId);
+//        if (optionalRole.isEmpty() || !roleId.equals(existingUser.getRole().getId())) {
+//            throw new DataNotFoundException(localizationUtils.getLocalizedMessage(MessageKeys.ROLE_DOES_NOT_EXISTS));
+//        }
+//        if (!optionalUser.get().isActive()) {
+//            throw new DataNotFoundException(localizationUtils.getLocalizedMessage(MessageKeys.USER_IS_LOCKED));
+//        }
+//        UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(
+//                email, password,
+//                existingUser.getAuthorities()
+//        );
+//
+//        //authenticate with Java Spring security
+//        authenticationManager.authenticate(authenticationToken);
+//        return jwtTokenUtil.generateToken(existingUser);
+//    }
     @Override
-    public String login(
-            String email,
-            String password,
-            Long roleId
-    ) throws Exception {
+    public String login(String email, String password) throws Exception {
         Optional<User> optionalUser = userRepo.findByEmail(email);
         if (optionalUser.isEmpty()) {
-            throw new DataNotFoundException(localizationUtils.getLocalizedMessage(MessageKeys.WRONG_EMAIL_PASSWORD));
+            throw new DataNotFoundException("Invalid email / password");
         }
-//        return optionalUser.get();//muốn trả JWT token ?
+
         User existingUser = optionalUser.get();
+
         if (existingUser.getFacebookAccountId() == 0
                 && existingUser.getGoogleAccountId() == 0) {
             if (!passwordEncoder.matches(password, existingUser.getPassword())) {
-                throw new BadCredentialsException(localizationUtils.getLocalizedMessage(MessageKeys.WRONG_EMAIL_PASSWORD));
+                throw new BadCredentialsException("Wrong email or password");
             }
         }
-        Optional<Role> optionalRole = roleRepo.findById(roleId);
-        if (optionalRole.isEmpty() || !roleId.equals(existingUser.getRole().getId())) {
-            throw new DataNotFoundException(localizationUtils.getLocalizedMessage(MessageKeys.ROLE_DOES_NOT_EXISTS));
-        }
-        if (!optionalUser.get().isActive()) {
-            throw new DataNotFoundException(localizationUtils.getLocalizedMessage(MessageKeys.USER_IS_LOCKED));
-        }
-        UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(
-                email, password,
-                existingUser.getAuthorities()
-        );
-
-        //authenticate with Java Spring security
+        UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(email, password);
+        //authenticate with java spring security
         authenticationManager.authenticate(authenticationToken);
         return jwtTokenUtil.generateToken(existingUser);
     }

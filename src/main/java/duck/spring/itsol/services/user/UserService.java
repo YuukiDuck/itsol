@@ -15,8 +15,7 @@ public interface UserService {
 
     String login(
             String email,
-            String password,
-            Long roleId
+            String password
     ) throws Exception;
 
     User getUserDetailsFromToken(String token) throws Exception;

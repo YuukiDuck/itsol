@@ -101,8 +101,8 @@ public class UserController {
         try {
             String token = userService.login(
                     userLoginDTO.getEmail(),
-                    userLoginDTO.getPassword(),
-                    userLoginDTO.getRoleId() == null ? 1 : userLoginDTO.getRoleId()
+                    userLoginDTO.getPassword()
+//                    userLoginDTO.getRoleId() == null ? 1 : userLoginDTO.getRoleId()
             );
             String userAgent = request.getHeader("User-Agent");
             User userDetail = userService.getUserDetailsFromToken(token);
@@ -197,4 +197,3 @@ public class UserController {
         }
     }
 }
-
